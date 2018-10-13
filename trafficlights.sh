@@ -14,6 +14,23 @@ GREEN=11
 ON="1"
 OFF="0"
 
+# Utility function to turn all lights off
+allLightsOff()
+{
+  echo $OFF > $BASE_GPIO_PATH/gpio$RED/value
+  echo $OFF > $BASE_GPIO_PATH/gpio$YELLOW/value 
+  echo $OFF > $BASE_GPIO_PATH/gpio$GREEN/value 
+}
+
+# Ctrl-C handler for clean shutdown
+shutdown()
+{
+  allLightsOff
+  exit 0
+}
+
+trap shutdown SIGINT
+
 # Export pins so that we can use them
 if [ ! -e $BASE_GPIO_PATH/gpio$RED ]; then
   echo "$RED" > $BASE_GPIO_PATH/export
@@ -32,10 +49,8 @@ echo "out" > $BASE_GPIO_PATH/gpio$RED/direction
 echo "out" > $BASE_GPIO_PATH/gpio$YELLOW/direction
 echo "out" > $BASE_GPIO_PATH/gpio$GREEN/direction
 
-# Turn pins off
-echo $OFF > $BASE_GPIO_PATH/gpio$RED/value
-echo $OFF > $BASE_GPIO_PATH/gpio$YELLOW/value 
-echo $OFF > $BASE_GPIO_PATH/gpio$GREEN/value 
+# Turn lights off to begin
+allLightsOff
 
 while [ 1 ]
 do
