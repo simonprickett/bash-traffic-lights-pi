@@ -1,7 +1,5 @@
 #!/bin/bash
 
-# TODO refactoring
-
 # Common path for all GPIO access
 BASE_GPIO_PATH=/sys/class/gpio
 
@@ -14,12 +12,32 @@ GREEN=11
 ON="1"
 OFF="0"
 
+# Utility function to export a pin if not already exported
+exportPin()
+{
+  if [ ! -e $BASE_GPIO_PATH/gpio$1 ]; then
+    echo "$1" > $BASE_GPIO_PATH/export
+  fi
+}
+
+# Utility function to set a pin as an output
+setOutput()
+{
+  echo "out" > $BASE_GPIO_PATH/gpio$1/direction
+}
+
+# Utility function to change state of a light
+setLightState()
+{
+  echo $2 > $BASE_GPIO_PATH/gpio$1/value
+}
+
 # Utility function to turn all lights off
 allLightsOff()
 {
-  echo $OFF > $BASE_GPIO_PATH/gpio$RED/value
-  echo $OFF > $BASE_GPIO_PATH/gpio$YELLOW/value 
-  echo $OFF > $BASE_GPIO_PATH/gpio$GREEN/value 
+  setLightState $RED $OFF
+  setLightState $YELLOW $OFF
+  setLightState $GREEN $OFF
 }
 
 # Ctrl-C handler for clean shutdown
@@ -32,49 +50,40 @@ shutdown()
 trap shutdown SIGINT
 
 # Export pins so that we can use them
-if [ ! -e $BASE_GPIO_PATH/gpio$RED ]; then
-  echo "$RED" > $BASE_GPIO_PATH/export
-fi
-
-if [ ! -e $BASE_GPIO_PATH/gpio$YELLOW ]; then
-  echo "$YELLOW" > $BASE_GPIO_PATH/export
-fi
-
-if [ ! -e $BASE_GPIO_PATH/gpio$GREEN ]; then
-  echo "$GREEN" > $BASE_GPIO_PATH/export
-fi
+exportPin $RED
+exportPin $YELLOW
+exportPin $GREEN
 
 # Set pins as outputs
-echo "out" > $BASE_GPIO_PATH/gpio$RED/direction
-echo "out" > $BASE_GPIO_PATH/gpio$YELLOW/direction
-echo "out" > $BASE_GPIO_PATH/gpio$GREEN/direction
+setOutput $RED
+setOutput $YELLOW
+setOutput $GREEN
 
 # Turn lights off to begin
 allLightsOff
 
+# Loop forever until user presses Ctrl-C
 while [ 1 ]
 do
   # Red
-  echo $ON > $BASE_GPIO_PATH/gpio$RED/value 
+  setLightState $RED $ON
   sleep 3
 
   # Red and Yellow
-  echo $ON > $BASE_GPIO_PATH/gpio$YELLOW/value 
+  setLightState $YELLOW $ON
   sleep 1
 
   # Green
-  echo $OFF > $BASE_GPIO_PATH/gpio$RED/value
-  echo $OFF > $BASE_GPIO_PATH/gpio$YELLOW/value
-  echo $ON > $BASE_GPIO_PATH/gpio$GREEN/value
+  setLightState $RED $OFF
+  setLightState $YELLOW $OFF
+  setLightState $GREEN $ON
   sleep 5
  
   # Yellow
-  echo $OFF > $BASE_GPIO_PATH/gpio$GREEN/value
-  echo $ON > $BASE_GPIO_PATH/gpio$YELLOW/value
+  setLightState $GREEN $OFF
+  setLightState $YELLOW $ON
   sleep 2
 
   # Yellow off
-  echo $OFF > $BASE_GPIO_PATH/gpio$YELLOW/value
+  setLightState $YELLOW $OFF
 done
-
-# TODO cleanup on exit...
